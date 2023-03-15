@@ -12,7 +12,7 @@ export default class Sensor {
         this.readings = []
     }
 
-    #getReading(ray, borders) {
+    #getReading(ray, borders, traffic) {
         let touches = []
 
         borders.forEach(border => {
@@ -26,21 +26,36 @@ export default class Sensor {
             }
         })
 
-        if (touches.length == 0) return null
+        for (const car of traffic) {
+            const poly = car.getPolygon()
+            for (let i = 0; i < poly.length; i++) {
+                const touch = Utils.getIntersection(
+                    ray[0],
+                    ray[1],
+                    poly[i],
+                    poly[(i + 1) % poly.length]
+                )
+                if (touch) {
+                    touches.push(touch)
+                }
+            }
+        }
+
+        if (touches.length === 0) return null
         else {
             const offsets = touches.map(touch => touch.offset)
             const minOffset = Math.min(...offsets)
-            return touches.find(touch => touch.offset == minOffset)
+            return touches.find(touch => touch.offset === minOffset)
         }
     }
 
-    update(borders) {
+    update(borders, traffic) {
         this.#castRays()
 
         this.readings = []
         this.rays.forEach(ray => {
             this.readings.push(
-                this.#getReading(ray, borders)
+                this.#getReading(ray, borders, traffic)
             )
         })
     }

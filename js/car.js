@@ -6,23 +6,26 @@ export default class Car {
 
     #speed = 0
     #acceleration = 0.2
-    #maxSpeed = 3
+    #maxSpeed = 0
     #friction = 0.05
     #damaged = false
     angle = 0
     #TURN_SPEED = 0.02
 
-    constructor(x, y, width, height) {
+    constructor(x, y, width, height, controlType, maxSpeed = 3) {
         this.x = x
         this.y = y
         this.width = width
         this.height = height
+        this.#maxSpeed = maxSpeed
 
-        this.sensor = new Sensor(this)
-        this.controls = new Controls()
+        if(controlType !== "DUMMY") {
+            this.sensor = new Sensor(this)
+        }
+        this.controls = new Controls(controlType)
     }
 
-    #getPolygon() {
+    getPolygon() {
         const radius = Math.hypot(this.width, this.height) / 2
         const alpha = Math.atan2(this.width, this.height )
 
@@ -51,12 +54,28 @@ export default class Car {
         ]
     }
 
-    update(borders) {
+    #assessDamage(borders, traffic) {
+        for (const border of borders) {
+            if(Utils.polyIntersect(this.getPolygon(), border)) {
+                return true
+            }
+        }
+        for (const car of traffic) {
+            if(Utils.polyIntersect(this.getPolygon(), car.getPolygon())) {
+                return true
+            }
+        }
+        return false
+    }
+
+    update(borders, traffic) {
         if(!this.#damaged) {
             this.#move()
-            this.#damaged = this.#assessDamage(borders)
+            this.#damaged = this.#assessDamage(borders, traffic)
         }
-        this.sensor.update(borders)
+        if(this.sensor) {
+            this.sensor.update(borders, traffic)
+        }
     }
 
     #move() {
@@ -104,31 +123,24 @@ export default class Car {
         this.y -= Math.cos(this.angle) * this.#speed
     }
 
-    draw(ctx) {
+    draw(ctx, color) {
         if(this.#damaged) {
-            ctx.fillStyle = "red"
+            ctx.fillStyle = "gray"
         } else {
-            ctx.fillStyle = "black"
+            ctx.fillStyle = color
         }
         ctx.beginPath()
         // color
         // draw the car
-        let polygon = this.#getPolygon()
+        let polygon = this.getPolygon()
         ctx.moveTo(polygon[0].x, polygon[0].y)
         for (let i = 1; i < polygon.length; i++) {
             ctx.lineTo(polygon[i].x, polygon[i].y)
         }
         ctx.fill()
 
-        this.sensor.draw(ctx)
-    }
-
-    #assessDamage(borders) {
-        for (const border of borders) {
-            if(Utils.polyIntersect(this.#getPolygon(), border)) {
-                return true
-            }
+        if(this.sensor) {
+            this.sensor.draw(ctx)
         }
-        return false
     }
 }

@@ -5,8 +5,15 @@ export default class Controls {
     right = false
     reverse = false
 
-    constructor() {
-        this.addKeyboardListeners()
+    constructor(controlType) {
+        switch (controlType) {
+            case 'KEYS':
+                this.addKeyboardListeners()
+                break
+            case 'DUMMY':
+                this.forward = true
+                break
+        }
     }
 
     addKeyboardListeners() {
