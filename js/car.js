@@ -20,18 +20,18 @@ export default class Car {
         this.height = height
         this.#maxSpeed = maxSpeed
 
-        this.useBrain=controlType==="AI"
+        this.useBrain = controlType === "AI"
 
-        if(controlType !== "DUMMY") {
+        if (controlType !== "DUMMY") {
             this.sensor = new Sensor(this)
-            this.brain = new NeuralNetwork([this.sensor.rayCount,6,4])
+            this.brain = new NeuralNetwork([this.sensor.rayCount, 6, 4])
         }
         this.controls = new Controls(controlType)
     }
 
     getPolygon() {
         const radius = Math.hypot(this.width, this.height) / 2
-        const alpha = Math.atan2(this.width, this.height )
+        const alpha = Math.atan2(this.width, this.height)
 
         // get the 4 corners of the car
         return [
@@ -60,12 +60,12 @@ export default class Car {
 
     #assessDamage(borders, traffic) {
         for (const border of borders) {
-            if(Utils.polyIntersect(this.getPolygon(), border)) {
+            if (Utils.polyIntersect(this.getPolygon(), border)) {
                 return true
             }
         }
         for (const car of traffic) {
-            if(Utils.polyIntersect(this.getPolygon(), car.getPolygon())) {
+            if (Utils.polyIntersect(this.getPolygon(), car.getPolygon())) {
                 return true
             }
         }
@@ -73,23 +73,23 @@ export default class Car {
     }
 
     update(borders, traffic) {
-        if(!this.#damaged) {
+        if (!this.#damaged) {
             this.#move()
             this.#damaged = this.#assessDamage(borders, traffic)
         }
-        if(this.sensor) {
+        if (this.sensor) {
             this.sensor.update(borders, traffic)
 
-            const offsets=this.sensor.readings.map(
-                s=>s==null?0:1-s.offset
+            const offsets = this.sensor.readings.map(
+                s => s == null ? 0 : 1 - s.offset
             );
-            const outputs=NeuralNetwork.feedForward(offsets,this.brain);
+            const outputs = NeuralNetwork.feedForward(offsets, this.brain);
             console.log(outputs)
-            if(this.useBrain){
-                this.controls.forward=outputs[0];
-                this.controls.left=outputs[1];
-                this.controls.right=outputs[2];
-                this.controls.reverse=outputs[3];
+            if (this.useBrain) {
+                this.controls.forward = outputs[0];
+                this.controls.left = outputs[1];
+                this.controls.right = outputs[2];
+                this.controls.reverse = outputs[3];
             }
         }
     }
@@ -140,7 +140,7 @@ export default class Car {
     }
 
     draw(ctx, color) {
-        if(this.#damaged) {
+        if (this.#damaged) {
             ctx.fillStyle = "gray"
         } else {
             ctx.fillStyle = color
@@ -155,7 +155,7 @@ export default class Car {
         }
         ctx.fill()
 
-        if(this.sensor) {
+        if (this.sensor) {
             this.sensor.draw(ctx)
         }
     }
