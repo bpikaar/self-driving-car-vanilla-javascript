@@ -1,5 +1,6 @@
 import Controls from './controls.js'
 import Sensor from './sensor.js'
+import Utils from './utils.js'
 
 export default class Car {
 
@@ -7,6 +8,7 @@ export default class Car {
     #acceleration = 0.2
     #maxSpeed = 3
     #friction = 0.05
+    #damaged = false
     angle = 0
     #TURN_SPEED = 0.02
 
@@ -20,8 +22,40 @@ export default class Car {
         this.controls = new Controls()
     }
 
+    #getPolygon() {
+        const radius = Math.hypot(this.width, this.height) / 2
+        const alpha = Math.atan2(this.width, this.height )
+
+        // get the 4 corners of the car
+        return [
+            // front left
+            {
+                x: this.x - Math.sin(this.angle - alpha) * radius,
+                y: this.y - Math.cos(this.angle - alpha) * radius
+            },
+            // front right
+            {
+                x: this.x - Math.sin(this.angle + alpha) * radius,
+                y: this.y - Math.cos(this.angle + alpha) * radius
+            },
+            // back right
+            {
+                x: this.x - Math.sin(Math.PI + this.angle - alpha) * radius,
+                y: this.y - Math.cos(Math.PI + this.angle - alpha) * radius
+            },
+            // back left
+            {
+                x: this.x - Math.sin(Math.PI + this.angle + alpha) * radius,
+                y: this.y - Math.cos(Math.PI + this.angle + alpha) * radius
+            },
+        ]
+    }
+
     update(borders) {
-        this.#move()
+        if(!this.#damaged) {
+            this.#move()
+            this.#damaged = this.#assessDamage(borders)
+        }
         this.sensor.update(borders)
     }
 
@@ -71,24 +105,30 @@ export default class Car {
     }
 
     draw(ctx) {
-        ctx.save()
-        // translate to the point where we want the 
-        // rotation to be centered at
-        ctx.translate(this.x, this.y)
-        ctx.rotate(-this.angle)
-
+        if(this.#damaged) {
+            ctx.fillStyle = "red"
+        } else {
+            ctx.fillStyle = "black"
+        }
         ctx.beginPath()
-        ctx.fillStyle = 'red'
-        ctx.rect(
-            - this.width / 2,
-            - this.height / 2,
-            this.width,
-            this.height
-        )
+        // color
+        // draw the car
+        let polygon = this.#getPolygon()
+        ctx.moveTo(polygon[0].x, polygon[0].y)
+        for (let i = 1; i < polygon.length; i++) {
+            ctx.lineTo(polygon[i].x, polygon[i].y)
+        }
         ctx.fill()
 
-        ctx.restore()
-
         this.sensor.draw(ctx)
+    }
+
+    #assessDamage(borders) {
+        for (const border of borders) {
+            if(Utils.polyIntersect(this.#getPolygon(), border)) {
+                return true
+            }
+        }
+        return false
     }
 }
